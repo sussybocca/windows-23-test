@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
 import Settings from "../apps/Settings";
 import Explorer from "../apps/Explorer";
-import Search from "./Search"; // New search component
-import AppWindow from "./AppWindow"; // Ensure path is correct
+import Search from "./Search";
+import AppWindow from "./AppWindow";
+import localforage from "localforage";
 
-const appsList = [
+// Built-in apps
+const builtInApps = [
   { name: "Calculator", icon: "🧮", component: <Calculator /> },
   { name: "Notes", icon: "📝", component: <Notes /> },
   { name: "Settings", icon: "⚙️", component: <Settings /> },
@@ -15,10 +17,22 @@ const appsList = [
 
 export default function Desktop() {
   const [openApps, setOpenApps] = useState([]);
+  const [customApps, setCustomApps] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
 
+  // Load custom apps from localforage on mount
+  useEffect(() => {
+    localforage.getItem("customApps").then((apps) => {
+      if (apps) {
+        setCustomApps(apps);
+      }
+    });
+  }, []);
+
+  // Combine built-in and custom apps
+  const appsList = [...builtInApps, ...customApps];
+
   const openApp = (app) => {
-    // Avoid opening duplicate apps
     if (!openApps.some((a) => a.name === app.name)) {
       setOpenApps([...openApps, app]);
     }
