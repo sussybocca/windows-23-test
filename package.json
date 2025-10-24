@@ -1,6 +1,6 @@
 {
   "name": "emoji-os",
-  "version": "1.0.0",
+  "version": "1.0.0-beta",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "framer-motion": "^10.12.16",
+    "localforage": "^1.10.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.0",
