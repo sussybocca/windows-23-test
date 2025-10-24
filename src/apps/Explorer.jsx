@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useSystemStore } from "../store/systemStore";
+
 export default function Explorer({ folderContent, title }) {
   const { drives, createFolder, createFile, readFile, betas } = useSystemStore();
   const [currentPath, setCurrentPath] = useState([]);
