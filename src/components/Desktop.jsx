@@ -3,6 +3,7 @@ import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
 import Settings from "../apps/Settings";
 import Explorer from "../apps/Explorer";
+import Search from "./Search"; // New search component
 import AppWindow from "./AppWindow"; // Ensure path is correct
 
 const appsList = [
@@ -14,6 +15,7 @@ const appsList = [
 
 export default function Desktop() {
   const [openApps, setOpenApps] = useState([]);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const openApp = (app) => {
     // Avoid opening duplicate apps
@@ -60,6 +62,17 @@ export default function Desktop() {
           {app.component}
         </AppWindow>
       ))}
+
+      {/* Search App */}
+      {searchOpen && (
+        <AppWindow
+          title="Search"
+          zIndex={openApps.length + 1}
+          onClose={() => setSearchOpen(false)}
+        >
+          <Search />
+        </AppWindow>
+      )}
     </div>
   );
 }
