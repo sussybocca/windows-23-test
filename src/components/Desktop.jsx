@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
-import AppWindow from "./AppWindow"; // Make sure this path is correct
+import Settings from "../apps/Settings";
+import Explorer from "../apps/Explorer";
+import AppWindow from "./AppWindow"; // Ensure path is correct
 
 const appsList = [
   { name: "Calculator", icon: "🧮", component: <Calculator /> },
   { name: "Notes", icon: "📝", component: <Notes /> },
+  { name: "Settings", icon: "⚙️", component: <Settings /> },
+  { name: "Explorer", icon: "🗂️", component: <Explorer /> },
 ];
 
 export default function Desktop() {
@@ -23,14 +27,22 @@ export default function Desktop() {
   };
 
   return (
-    <div className="desktop" style={{ width: "100vw", height: "100vh", position: "relative" }}>
+    <div
+      className="desktop"
+      style={{ width: "100vw", height: "100vh", position: "relative" }}
+    >
       {/* App Icons */}
       {appsList.map((app) => (
         <div
           key={app.name}
           className="app-icon"
           onClick={() => openApp(app)}
-          style={{ cursor: "pointer", display: "inline-block", margin: 20, textAlign: "center" }}
+          style={{
+            cursor: "pointer",
+            display: "inline-block",
+            margin: 20,
+            textAlign: "center",
+          }}
         >
           <span style={{ fontSize: "32px" }}>{app.icon}</span>
           <div style={{ fontSize: "14px", marginTop: 5 }}>{app.name}</div>
