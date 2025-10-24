@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useDesktopStore } from "../store/desktopStore";
 import AppWindow from "./AppWindow";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
