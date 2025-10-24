@@ -1,0 +1,17 @@
+[build]
+  # The command to build your Vite project
+  command = "npm run build"
+  # The folder to publish (Vite outputs production files here)
+  publish = "dist"
+
+[dev]
+  # Optional: run the dev server locally via Netlify CLI
+  command = "npm run dev"
+  port = 5173
+  framework = "vite"
+
+# Redirect all routes to index.html (for SPA routing)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
