@@ -1,53 +1,53 @@
 import React, { useState } from "react";
-import AppWindow from "./AppWindow";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
-import BackgroundApp from "../apps/BackgroundApp";
+import AppWindow from "./AppWindow"; // Make sure this path is correct
+
+const appsList = [
+  { name: "Calculator", icon: "🧮", component: <Calculator /> },
+  { name: "Notes", icon: "📝", component: <Notes /> },
+];
 
 export default function Desktop() {
-  const { openApps, openApp, closeApp, focusApp } = useDesktopStore();
-  const [desktopBackground, setDesktopBackground] = useState("#1e1e1e");
+  const [openApps, setOpenApps] = useState([]);
+
+  const openApp = (app) => {
+    // Avoid opening duplicate apps
+    if (!openApps.some((a) => a.name === app.name)) {
+      setOpenApps([...openApps, app]);
+    }
+  };
+
+  const closeApp = (appName) => {
+    setOpenApps(openApps.filter((a) => a.name !== appName));
+  };
 
   return (
-    <div
-      className="desktop"
-      style={{
-        width: "100vw",
-        height: "100vh",
-        background: `url(${desktopBackground}) center/cover no-repeat`,
-        position: "relative",
-      }}
-    >
-      {/* Render open apps */}
-      {openApps.map((app) => (
-        <AppWindow
-          key={app.id}
-          title={app.name}
-          zIndex={app.zIndex}
-          onClose={() => closeApp(app.id)}
-          onFocus={() => focusApp(app.id)}
+    <div className="desktop" style={{ width: "100vw", height: "100vh", position: "relative" }}>
+      {/* App Icons */}
+      {appsList.map((app) => (
+        <div
+          key={app.name}
+          className="app-icon"
+          onClick={() => openApp(app)}
+          style={{ cursor: "pointer", display: "inline-block", margin: 20, textAlign: "center" }}
         >
-          {app.component === "Calculator" && <Calculator />}
-          {app.component === "Notes" && <Notes />}
-          {app.component === "BackgroundApp" && (
-            <BackgroundApp setDesktopBackground={setDesktopBackground} />
-          )}
-        </AppWindow>
+          <span style={{ fontSize: "32px" }}>{app.icon}</span>
+          <div style={{ fontSize: "14px", marginTop: 5 }}>{app.name}</div>
+        </div>
       ))}
 
-      {/* App icons */}
-      <div
-        className="app-icons"
-        style={{ position: "absolute", bottom: 20, left: 20, display: "flex", gap: 12 }}
-      >
-        <div onClick={() => openApp({ name: "Calculator", component: "Calculator" })}>
-          🧮 Calculator
-        </div>
-        <div onClick={() => openApp({ name: "Notes", component: "Notes" })}>📝 Notes</div>
-        <div onClick={() => openApp({ name: "Backgrounds", component: "BackgroundApp" })}>
-          🖼️ Backgrounds
-        </div>
-      </div>
+      {/* Open Apps */}
+      {openApps.map((app, index) => (
+        <AppWindow
+          key={app.name}
+          title={app.name}
+          zIndex={index + 1}
+          onClose={() => closeApp(app.name)}
+        >
+          {app.component}
+        </AppWindow>
+      ))}
     </div>
   );
 }
