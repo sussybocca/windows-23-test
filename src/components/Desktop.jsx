@@ -1,30 +1,32 @@
-import React, { useState } from "react";
+import React from "react";
+import { useDesktopStore } from "../store/desktopStore";
+import AppWindow from "./AppWindow";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
 
-const appsList = [
-  { name: "Calculator", icon: "🧮", component: <Calculator /> },
-  { name: "Notes", icon: "📝", component: <Notes /> },
-];
-
 export default function Desktop() {
-  const [openApp, setOpenApp] = useState(null);
+  const { openApps, openApp, closeApp, focusApp } = useDesktopStore();
 
   return (
     <div className="desktop">
-      {appsList.map((app) => (
-        <div
-          key={app.name}
-          className="app-icon"
-          onClick={() => setOpenApp(app.component)}
+      {/* Render open apps */}
+      {openApps.map((app) => (
+        <AppWindow
+          key={app.id}
+          title={app.name}
+          zIndex={app.zIndex}
+          onClose={() => closeApp(app.id)}
+          onFocus={() => focusApp(app.id)}
         >
-          <span>{app.icon}</span>
-          <span style={{ fontSize: "14px", marginTop: "5px" }}>{app.name}</span>
-        </div>
+          {app.component === "Calculator" && <Calculator />}
+          {app.component === "Notes" && <Notes />}
+        </AppWindow>
       ))}
 
-      <div style={{ position: "absolute", top: 100, left: 100 }}>
-        {openApp}
+      {/* App icons */}
+      <div className="app-icons">
+        <div onClick={() => openApp({ name: "Calculator", component: "Calculator" })}>🧮 Calculator</div>
+        <div onClick={() => openApp({ name: "Notes", component: "Notes" })}>📝 Notes</div>
       </div>
     </div>
   );
