@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import LaunchScreen from "./components/LaunchScreen";
+import LaunchScreen from "./components/LaunchScreen"; // NEW
 import BootScreen from "./components/BootScreen";
 import Desktop from "./components/Desktop";
 import Cursor from "./components/Cursor";
-import Search from "./components/Search"; // Optional search component
+import Search from "./components/Search";
 import "./index.css";
 
 export default function App() {
@@ -15,21 +15,20 @@ export default function App() {
     <>
       {/* Launch Screen */}
       {!launchFinished && (
-        <LaunchScreen onLaunchComplete={() => setLaunchFinished(true)} />
+        <LaunchScreen onFinish={() => setLaunchFinished(true)} />
       )}
 
-      {/* Boot Screen */}
+      {/* Boot screen */}
       {launchFinished && !bootFinished && (
         <BootScreen onFinish={() => setBootFinished(true)} />
       )}
 
-      {/* Main Desktop */}
+      {/* Main desktop */}
       {launchFinished && bootFinished && (
         <>
           <Desktop />
           <Cursor />
           {searchOpen && <Search />}
-          {/* You can add a button or keyboard shortcut to toggle searchOpen */}
         </>
       )}
     </>
