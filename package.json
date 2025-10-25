@@ -20,7 +20,7 @@
     "three": "^0.158.0",
     "react-terminal-ui": "^1.2.0",
     "progressbar.js": "^1.1.0",
-    "nprogress": "^0.2.0"
+    "nprogress": "^0.2.0",
     "@neondatabase/serverless": "^1.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
