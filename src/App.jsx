@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import LaunchScreen from "./components/LaunchScreen"; // NEW
 import BootScreen from "./components/BootScreen";
 import Desktop from "./components/Desktop";
 import Cursor from "./components/Cursor";
