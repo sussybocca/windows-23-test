@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import nodemailer from "nodemailer";
+import { useState } from "react";
 
 export default function RegisterForm({ onRegister }) {
   const [email, setEmail] = useState("");
@@ -10,62 +9,13 @@ export default function RegisterForm({ onRegister }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [twoStepEnabled, setTwoStepEnabled] = useState(false);
-  const [env, setEnv] = useState(null);
 
-  // ✅ Load Netlify secrets
-  useEffect(() => {
-    const loadEnv = async () => {
-      try {
-        const res = await fetch("/.netlify/functions/env");
-        const data = await res.json();
-        if (data.success) {
-          setEnv(data.env);
-        } else {
-          setMessage("⚠️ Unable to load server environment.");
-        }
-      } catch (err) {
-        console.error(err);
-        setMessage("⚠️ Error loading server environment.");
-      }
-    };
-    loadEnv();
-  }, []);
+  // Generate 10-character verification code in browser
+  const generateCode = () => crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
 
-  // 🔹 Send email via Nodemailer
-  const sendVerificationEmail = async (toEmail, verificationCode) => {
-    if (!env?.EMAIL_USER || !env?.EMAIL_PASS) return;
-
-    try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail", // or your email service
-        auth: {
-          user: env.EMAIL_USER,
-          pass: env.EMAIL_PASS,
-        },
-      });
-
-      const mailOptions = {
-        from: env.EMAIL_USER,
-        to: toEmail,
-        subject: "Your Verification Code",
-        text: `Hello ${username},\n\nYour verification code is: ${verificationCode}\n\nThis code is valid for one-time use only.`,
-      };
-
-      await transporter.sendMail(mailOptions);
-      console.log("✅ Verification email sent to", toEmail);
-    } catch (err) {
-      console.error("❌ Error sending email:", err);
-    }
-  };
-
-  // 🔹 Handle user registration
   const handleRegister = async () => {
     if (!email || !username) {
       setMessage("Please fill in all fields.");
-      return;
-    }
-    if (!env) {
-      setMessage("Server not ready. Please wait...");
       return;
     }
 
@@ -73,16 +23,26 @@ export default function RegisterForm({ onRegister }) {
     setMessage("");
 
     try {
-      // Generate random 10-character code
-      const codeValue = crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
+      const codeValue = generateCode();
       setGeneratedCode(codeValue);
 
       if (twoStepEnabled) {
-        await sendVerificationEmail(email, codeValue);
+        // Call serverless function to send the email
+        const res = await fetch("/.netlify/functions/sendVerification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, username, code: codeValue }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          setMessage(`❌ Failed to send verification email: ${data.error}`);
+          setLoading(false);
+          return;
+        }
       }
 
-      // TODO: Save user to Neon DB using env.DATABASE_URL
-      console.log(`Saving user: ${email}, ${username}, TwoStep: ${twoStepEnabled}`);
+      // You can save user to Neon DB here if needed (another serverless function)
+      console.log(`Saving user: ${email}, ${username}, 2-Step: ${twoStepEnabled}`);
 
       setStep(2);
       setMessage("✅ Verification code generated! Enter it below.");
@@ -94,7 +54,6 @@ export default function RegisterForm({ onRegister }) {
     }
   };
 
-  // 🔹 Handle verification
   const handleVerify = () => {
     if (!code) {
       setMessage("Please enter the verification code.");
@@ -121,79 +80,30 @@ export default function RegisterForm({ onRegister }) {
 
   return (
     <div className="register-form">
-      {!env && <p>Loading server environment...</p>}
-
-      {step === 1 && env && (
+      {step === 1 && (
         <div>
           <h2>Register</h2>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-          />
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            disabled={loading}
-          />
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
+          <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} />
           <div style={{ marginTop: 10 }}>
             <label>
-              <input
-                type="checkbox"
-                checked={twoStepEnabled}
-                onChange={() => setTwoStepEnabled((s) => !s)}
-                disabled={loading}
-              />{" "}
-              Enable 2-Step Verification (Optional)
+              <input type="checkbox" checked={twoStepEnabled} onChange={() => setTwoStepEnabled(s => !s)} disabled={loading} /> Enable 2-Step Verification (Optional)
             </label>
           </div>
-          <button
-            onClick={handleRegister}
-            disabled={loading}
-            style={{ marginTop: 10 }}
-          >
+          <button onClick={handleRegister} disabled={loading} style={{ marginTop: 10 }}>
             {loading ? "Generating..." : "Register / Generate Verification"}
           </button>
         </div>
       )}
 
-      {step === 2 && env && (
+      {step === 2 && (
         <div>
           <h2>Enter Verification Code</h2>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-          />
-          <input
-            type="text"
-            placeholder="Verification code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            disabled={loading}
-          />
-          <button
-            onClick={handleVerify}
-            disabled={loading}
-            style={{ marginTop: 10 }}
-          >
+          <input type="text" placeholder="Verification code" value={code} onChange={(e) => setCode(e.target.value)} disabled={loading} />
+          <button onClick={handleVerify} disabled={loading} style={{ marginTop: 10 }}>
             {loading ? "Verifying..." : "Verify & Complete Registration"}
           </button>
-          <button
-            onClick={() => {
-              setStep(1);
-              setMessage("");
-              setCode("");
-            }}
-            disabled={loading}
-            style={{ marginLeft: 10 }}
-          >
+          <button onClick={() => { setStep(1); setMessage(""); setCode(""); }} disabled={loading} style={{ marginLeft: 10 }}>
             Back
           </button>
         </div>
