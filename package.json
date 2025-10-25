@@ -14,7 +14,7 @@
     "dompurify": "^3.0.6",
     "react-login-page": "^1.0.6",
     "localforage": "^1.10.0",
-    "gsap": "^3.15.0",
+    "gsap": "^3.13.0",
     "animejs": "^3.2.1",
     "typeit": "^8.7.1",
     "three": "^0.158.0",
