@@ -4,9 +4,9 @@ export default function LoginForm({ onLogin }) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [env, setEnv] = useState(null);
+  const [env, setEnv] = useState({}); // initialize as empty object
 
-  // Load Netlify secrets
+  // Load Netlify secrets in the background
   useEffect(() => {
     const loadEnv = async () => {
       try {
@@ -15,11 +15,10 @@ export default function LoginForm({ onLogin }) {
         if (data.success) {
           setEnv(data.env);
         } else {
-          setMessage("⚠️ Unable to load server environment.");
+          console.warn("⚠️ Unable to load server environment.");
         }
       } catch (err) {
-        console.error(err);
-        setMessage("⚠️ Error loading server environment.");
+        console.error("⚠️ Error loading server environment.", err);
       }
     };
     loadEnv();
@@ -28,10 +27,6 @@ export default function LoginForm({ onLogin }) {
   const handleLogin = async () => {
     if (!email) {
       setMessage("Please enter your email.");
-      return;
-    }
-    if (!env) {
-      setMessage("Server not ready. Please wait...");
       return;
     }
 
@@ -63,28 +58,22 @@ export default function LoginForm({ onLogin }) {
 
   return (
     <div className="login-form">
-      {!env && <p>Loading server environment...</p>}
-      {env && (
-        <>
-          <h2>Login</h2>
-          <input
-            type="email"
-            placeholder="Enter your registered email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-          />
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            style={{ marginTop: 10 }}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-          {message && <p style={{ marginTop: 10 }}>{message}</p>}
-        </>
-      )}
+      <h2>Login</h2>
+      <input
+        type="email"
+        placeholder="Enter your registered email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={loading}
+      />
+      <button
+        onClick={handleLogin}
+        disabled={loading}
+        style={{ marginTop: 10 }}
+      >
+        {loading ? "Logging in..." : "Login"}
+      </button>
+      {message && <p style={{ marginTop: 10 }}>{message}</p>}
     </div>
   );
 }
-
