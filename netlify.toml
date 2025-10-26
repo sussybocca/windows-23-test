@@ -15,3 +15,8 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Schedule the ping-neon-scheduled function every 4 minutes
+[[functions]]
+  schedule = "*/4 * * * *"  # every 4 minutes
+  path = "ping-neon-scheduled"
