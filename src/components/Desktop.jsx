@@ -2,17 +2,21 @@ import React, { useState, useEffect } from "react";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
 import Settings from "../apps/Settings";
-import Explorer from "../apps/Explorer";
+import FileSystemExplorer from "../apps/Explorer";     // Filesystem explorer
+import PublicExplorer from "../components/Explorer";  // Public OS explorer
+import PublicEditor from "../components/PublicEditor"; // Public Editor
 import Search from "./Search";
 import AppWindow from "./AppWindow";
 import localforage from "localforage";
 
-// Built-in apps
+// Built-in apps with custom emoji icons
 const builtInApps = [
   { name: "Calculator", icon: "🧮", component: <Calculator /> },
   { name: "Notes", icon: "📝", component: <Notes /> },
   { name: "Settings", icon: "⚙️", component: <Settings /> },
-  { name: "Explorer", icon: "🗂️", component: <Explorer /> },
+  { name: "Filesystem Explorer", icon: "🗄️", component: <FileSystemExplorer /> }, // Local filesystem app
+  { name: "Public Explorer", icon: "🗂️", component: <PublicExplorer /> },        // Public OS explorer
+  { name: "Public Editor", icon: "🖌️", component: <PublicEditor /> },
 ];
 
 export default function Desktop() {
