@@ -4,40 +4,58 @@ import Desktop from "./components/Desktop";
 import Cursor from "./components/Cursor";
 import Search from "./components/Search";
 import RegisterForm from "./components/RegisterForm";
-import LoginForm from "./components/LoginForm";     // New login component
-import Explorer from "./components/Explorer";       // View other users' servers
-import PublicEditor from "./components/PublicEditor"; // Edit/publish OS systems
+import LoginForm from "./components/LoginForm";
+import Explorer from "./components/Explorer";
+import PublicEditor from "./components/PublicEditor";
 import "./index.css";
 
 export default function App() {
   const [bootFinished, setBootFinished] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [user, setUser] = useState(null);           // registered/logged-in user
+  const [user, setUser] = useState(null);
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
 
-  // Called after registration or login
+  const [activeForm, setActiveForm] = useState(null); // "register" | "login" | null
+
   const handleLoginOrRegister = (loggedUser) => {
     setUser(loggedUser);
     setBootFinished(true);
   };
 
+  // Show selection buttons if user is not logged in and no form is active
+  if (!user && !activeForm) {
+    return (
+      <div className="auth-selection" style={{ textAlign: "center", marginTop: "50px" }}>
+        <h2>Welcome to WebBro OS</h2>
+        <div style={{ marginTop: "20px" }}>
+          <button onClick={() => setActiveForm("register")} style={{ marginRight: "20px", padding: "10px 20px", fontSize: "16px" }}>
+            Register
+          </button>
+          <button onClick={() => setActiveForm("login")} style={{ padding: "10px 20px", fontSize: "16px" }}>
+            Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Show either RegisterForm or LoginForm if no user */}
-      {!user && (
-        <div>
-          <RegisterForm onRegister={handleLoginOrRegister} />
-          <LoginForm onLogin={handleLoginOrRegister} />
-        </div>
+      {/* Show active form if user selected one */}
+      {!user && activeForm === "register" && (
+        <RegisterForm onRegister={handleLoginOrRegister} />
+      )}
+      {!user && activeForm === "login" && (
+        <LoginForm onLogin={handleLoginOrRegister} />
       )}
 
-      {/* Boot screen after login/registration */}
+      {/* Boot screen */}
       {user && !bootFinished && (
         <BootScreen onFinish={() => setBootFinished(true)} />
       )}
 
-      {/* Main desktop after boot */}
+      {/* Main desktop */}
       {user && bootFinished && (
         <>
           <Desktop
