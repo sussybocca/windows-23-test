@@ -4,29 +4,35 @@ import Desktop from "./components/Desktop";
 import Cursor from "./components/Cursor";
 import Search from "./components/Search";
 import RegisterForm from "./components/RegisterForm";
-import Explorer from "./components/Explorer";         // New: view other users' servers
-import PublicEditor from "./components/PublicEditor"; // New: edit/publish OS systems
+import LoginForm from "./components/LoginForm";     // New login component
+import Explorer from "./components/Explorer";       // View other users' servers
+import PublicEditor from "./components/PublicEditor"; // Edit/publish OS systems
 import "./index.css";
 
 export default function App() {
   const [bootFinished, setBootFinished] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [user, setUser] = useState(null); // registered/logged-in user
-  const [explorerOpen, setExplorerOpen] = useState(false); // toggle Explorer
-  const [editorOpen, setEditorOpen] = useState(false);     // toggle PublicEditor
+  const [user, setUser] = useState(null);           // registered/logged-in user
+  const [explorerOpen, setExplorerOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
 
-  // Handler when registration is complete
-  const handleRegister = (registeredUser) => {
-    setUser(registeredUser); // save user info
-    setBootFinished(true);   // move to boot screen
+  // Called after registration or login
+  const handleLoginOrRegister = (loggedUser) => {
+    setUser(loggedUser);
+    setBootFinished(true);
   };
 
   return (
     <>
-      {/* Registration screen */}
-      {!user && <RegisterForm onRegister={handleRegister} />}
+      {/* Show either RegisterForm or LoginForm if no user */}
+      {!user && (
+        <div>
+          <RegisterForm onRegister={handleLoginOrRegister} />
+          <LoginForm onLogin={handleLoginOrRegister} />
+        </div>
+      )}
 
-      {/* Boot screen after registration */}
+      {/* Boot screen after login/registration */}
       {user && !bootFinished && (
         <BootScreen onFinish={() => setBootFinished(true)} />
       )}
@@ -41,16 +47,10 @@ export default function App() {
           <Cursor />
           {searchOpen && <Search />}
           {explorerOpen && (
-            <Explorer
-              user={user}
-              onClose={() => setExplorerOpen(false)}
-            />
+            <Explorer user={user} onClose={() => setExplorerOpen(false)} />
           )}
           {editorOpen && (
-            <PublicEditor
-              user={user}
-              onClose={() => setEditorOpen(false)}
-            />
+            <PublicEditor user={user} onClose={() => setEditorOpen(false)} />
           )}
         </>
       )}
