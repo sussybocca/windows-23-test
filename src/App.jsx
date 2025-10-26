@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BootScreen from "./components/BootScreen";
 import Desktop from "./components/Desktop";
 import Cursor from "./components/Cursor";
@@ -17,11 +17,28 @@ export default function App() {
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [activeForm, setActiveForm] = useState(null); // "register" | "login" | null
-  const [showSubscribe, setShowSubscribe] = useState(false); // 🆕 show subscribe prompt
+  const [showSubscribe, setShowSubscribe] = useState(false); // 🆕 subscribe prompt
 
+  // 🟢 Keep Neon DB alive every 4 minutes
+  useEffect(() => {
+    const pingNeon = async () => {
+      try {
+        await fetch("/.netlify/functions/ping-neon");
+        console.log("✅ Pinged Neon DB to keep it awake");
+      } catch (err) {
+        console.warn("⚠️ Failed to ping Neon DB:", err);
+      }
+    };
+
+    pingNeon(); // Ping immediately when app starts
+    const interval = setInterval(pingNeon, 4 * 60 * 1000); // every 4 min
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Called after login or registration
   const handleLoginOrRegister = (loggedUser) => {
     setUser(loggedUser);
-    // If this came from registration, ask to subscribe
     if (activeForm === "register") {
       setShowSubscribe(true);
     } else {
@@ -29,12 +46,13 @@ export default function App() {
     }
   };
 
+  // After user subscribes or skips
   const handleSubscribeDone = () => {
     setShowSubscribe(false);
     setBootFinished(true);
   };
 
-  // Show selection buttons if user is not logged in and no form is active
+  // Show selection buttons if user is not logged in and no form active
   if (!user && !activeForm) {
     return (
       <div
@@ -42,31 +60,32 @@ export default function App() {
         style={{ textAlign: "center", marginTop: "50px" }}
       >
         <h2>Welcome to WebBro OS</h2>
-        <div style={{ marginTop: "20px" }}>
-          <button
-            onClick={() => setActiveForm("register")}
-            style={{
-              marginRight: "20px",
-              padding: "10px 20px",
-              fontSize: "16px",
-            }}
-          >
-            Register
-          </button>
-          <button
-            onClick={() => setActiveForm("login")}
-            style={{ padding: "10px 20px", fontSize: "16px" }}
-          >
-            Login
-          </button>
-        </div>
+        <p style={{ marginBottom: "20px" }}>
+          Sign up or log in to access your personal desktop.
+        </p>
+        <button
+          onClick={() => setActiveForm("register")}
+          style={{
+            marginRight: "20px",
+            padding: "10px 20px",
+            fontSize: "16px",
+          }}
+        >
+          Register
+        </button>
+        <button
+          onClick={() => setActiveForm("login")}
+          style={{ padding: "10px 20px", fontSize: "16px" }}
+        >
+          Login
+        </button>
       </div>
     );
   }
 
   return (
     <>
-      {/* Show Register/Login form */}
+      {/* Show registration or login */}
       {!user && activeForm === "register" && (
         <RegisterForm onRegister={handleLoginOrRegister} />
       )}
@@ -74,7 +93,7 @@ export default function App() {
         <LoginForm onLogin={handleLoginOrRegister} />
       )}
 
-      {/* Show Subscribe prompt after registration */}
+      {/* Subscription prompt after registration */}
       {user && showSubscribe && (
         <SubscribePrompt user={user} onDone={handleSubscribeDone} />
       )}
@@ -84,7 +103,7 @@ export default function App() {
         <BootScreen onFinish={() => setBootFinished(true)} />
       )}
 
-      {/* Main desktop */}
+      {/* Desktop */}
       {user && bootFinished && (
         <>
           <Desktop
