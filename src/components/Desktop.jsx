@@ -2,27 +2,33 @@ import React, { useState, useEffect } from "react";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
 import Settings from "../apps/Settings";
-import FileSystemExplorer from "../apps/Explorer";     // Filesystem explorer
-import PublicExplorer from "../components/Explorer";  // Public OS explorer
-import PublicEditor from "../components/PublicEditor"; // Public Editor
+import FileSystemExplorer from "../apps/Explorer";
+import PublicExplorer from "../components/Explorer";
+import PublicEditor from "../components/PublicEditor";
 import Search from "./Search";
 import AppWindow from "./AppWindow";
 import localforage from "localforage";
+
+// ✅ Import your custom click sound
+import clickSoundFile from "../sounds/click.wav";
 
 // Built-in apps with custom emoji icons
 const builtInApps = [
   { name: "Calculator", icon: "🧮", component: <Calculator /> },
   { name: "Notes", icon: "📝", component: <Notes /> },
   { name: "Settings", icon: "⚙️", component: <Settings /> },
-  { name: "Filesystem Explorer", icon: "🗄️", component: <FileSystemExplorer /> }, // Local filesystem app
-  { name: "Public Explorer", icon: "🗂️", component: <PublicExplorer /> },        // Public OS explorer
+  { name: "Filesystem Explorer", icon: "🗄️", component: <FileSystemExplorer /> },
+  { name: "Public Explorer", icon: "🗂️", component: <PublicExplorer /> },
   { name: "Public Editor", icon: "🖌️", component: <PublicEditor /> },
 ];
 
-export default function Desktop() {
+export default function Desktop({ wallpaper }) {
   const [openApps, setOpenApps] = useState([]);
   const [customApps, setCustomApps] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Preload click sound
+  const clickSound = new Audio(clickSoundFile);
 
   // Load custom apps from localforage on mount
   useEffect(() => {
@@ -37,6 +43,10 @@ export default function Desktop() {
   const appsList = [...builtInApps, ...customApps];
 
   const openApp = (app) => {
+    // Play click sound each time a user opens an app
+    clickSound.currentTime = 0;
+    clickSound.play().catch(() => {}); // prevent errors if sound autoplay blocked
+
     if (!openApps.some((a) => a.name === app.name)) {
       setOpenApps([...openApps, app]);
     }
@@ -49,7 +59,14 @@ export default function Desktop() {
   return (
     <div
       className="desktop"
-      style={{ width: "100vw", height: "100vh", position: "relative" }}
+      style={{
+        width: "100vw",
+        height: "100vh",
+        position: "relative",
+        backgroundImage: `url(${wallpaper})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
       {/* App Icons */}
       {appsList.map((app) => (
