@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Calculator from "../apps/Calculator";
 import Notes from "../apps/Notes";
 import Settings from "../apps/Settings";
@@ -9,8 +9,8 @@ import Search from "./Search";
 import AppWindow from "./AppWindow";
 import localforage from "localforage";
 
-// ✅ Import your custom click sound
-import clickSoundFile from "../sounds/click.wav";
+// ✅ Correct path for click sound
+import clickSoundFile from "../assets/sounds/click.wav";
 
 // Built-in apps with custom emoji icons
 const builtInApps = [
@@ -27,15 +27,13 @@ export default function Desktop({ wallpaper }) {
   const [customApps, setCustomApps] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Preload click sound
-  const clickSound = new Audio(clickSoundFile);
+  // Preload click sound with useRef
+  const clickSound = useRef(new Audio(clickSoundFile));
 
   // Load custom apps from localforage on mount
   useEffect(() => {
     localforage.getItem("customApps").then((apps) => {
-      if (apps) {
-        setCustomApps(apps);
-      }
+      if (apps) setCustomApps(apps);
     });
   }, []);
 
@@ -43,9 +41,9 @@ export default function Desktop({ wallpaper }) {
   const appsList = [...builtInApps, ...customApps];
 
   const openApp = (app) => {
-    // Play click sound each time a user opens an app
-    clickSound.currentTime = 0;
-    clickSound.play().catch(() => {}); // prevent errors if sound autoplay blocked
+    // Play click sound
+    clickSound.current.currentTime = 0;
+    clickSound.current.play().catch(() => {});
 
     if (!openApps.some((a) => a.name === app.name)) {
       setOpenApps([...openApps, app]);
