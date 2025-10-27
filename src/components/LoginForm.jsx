@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { initSupabase } from "../lib/supabaseClient";
-import bcrypt from "bcryptjs"; // For comparing hashed passwords
 
 export default function LoginForm({ onLogin }) {
   const [identifier, setIdentifier] = useState(""); // email or username
@@ -21,30 +20,22 @@ export default function LoginForm({ onLogin }) {
       const supabase = initSupabase();
       if (!supabase) throw new Error("Supabase client not initialized");
 
-      // Try to find user by email or username
-      let { data: users, error } = await supabase
-        .from("users")
-        .select("*")
-        .or(`email.eq.${identifier},username.eq.${identifier}`)
-        .limit(1);
+      // Call a serverless function that handles password verification
+      const res = await fetch("/.netlify/functions/loginUser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
 
-      const user = users[0];
-      if (!user) {
-        setMessage("❌ No user found with that email or username.");
+      if (!res.ok) {
+        setMessage(`❌ ${data.error || "Login failed"}`);
         return;
       }
 
-      // Compare password hash
-      const validPassword = await bcrypt.compare(password, user.password_hash);
-      if (!validPassword) {
-        setMessage("❌ Invalid password.");
-        return;
-      }
-
-      setMessage(`✅ Welcome back, ${user.username}!`);
-      onLogin(user);
+      setMessage(`✅ Welcome back, ${data.username}!`);
+      onLogin(data);
     } catch (err) {
       console.error(err);
       setMessage("❌ Error during login.");
@@ -54,21 +45,7 @@ export default function LoginForm({ onLogin }) {
   };
 
   return (
-    <div
-      className="login-form"
-      style={{
-        textAlign: "center",
-        marginTop: "60px",
-        background: "rgba(0, 0, 0, 0.7)",
-        color: "#fff",
-        padding: "30px",
-        borderRadius: "10px",
-        width: "350px",
-        marginLeft: "auto",
-        marginRight: "auto",
-        boxShadow: "0 0 20px rgba(0, 255, 255, 0.2)",
-      }}
-    >
+    <div style={containerStyle}>
       <h2 style={{ marginBottom: "20px" }}>Login to WebBro OS</h2>
 
       <input
@@ -92,20 +69,23 @@ export default function LoginForm({ onLogin }) {
         {loading ? "Logging in..." : "Login"}
       </button>
 
-      {message && (
-        <p
-          style={{
-            marginTop: "15px",
-            fontSize: "14px",
-            color: message.startsWith("✅") ? "#0f0" : "#ff5555",
-          }}
-        >
-          {message}
-        </p>
-      )}
+      {message && <p style={messageStyle(message)}>{message}</p>}
     </div>
   );
 }
+
+const containerStyle = {
+  textAlign: "center",
+  marginTop: "60px",
+  background: "rgba(0,0,0,0.7)",
+  color: "#fff",
+  padding: "30px",
+  borderRadius: "10px",
+  width: "350px",
+  marginLeft: "auto",
+  marginRight: "auto",
+  boxShadow: "0 0 20px rgba(0, 255, 255, 0.2)",
+};
 
 const inputStyle = {
   display: "block",
@@ -128,3 +108,9 @@ const buttonStyle = {
   cursor: "pointer",
   fontWeight: "bold",
 };
+
+const messageStyle = (msg) => ({
+  marginTop: "15px",
+  fontSize: "14px",
+  color: msg.startsWith("✅") ? "#0f0" : "#ff5555",
+});
