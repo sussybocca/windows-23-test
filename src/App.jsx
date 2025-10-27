@@ -7,9 +7,9 @@ import RegisterForm from "./components/RegisterForm";
 import LoginForm from "./components/LoginForm";
 import Explorer from "./components/Explorer";
 import PublicEditor from "./components/PublicEditor";
+import UpdateSubscribe from "./components/SubscribePrompt"; // ✅ import the subscription component
 import "./index.css";
 
-// ✅ Correct import paths (images are in src/assets/images)
 import wallpaper1 from "./assets/images/wallpaper1.jpg";
 import wallpaper2 from "./assets/images/wallpaper2.jpg";
 import wallpaper3 from "./assets/images/wallpaper3.jpg";
@@ -21,7 +21,7 @@ export default function App() {
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [activeForm, setActiveForm] = useState(null); // "register" | "login" | null
-  const [selectedWallpaper, setSelectedWallpaper] = useState(wallpaper1); // Default wallpaper
+  const [selectedWallpaper, setSelectedWallpaper] = useState(wallpaper1);
 
   const wallpapers = [wallpaper1, wallpaper2, wallpaper3];
 
@@ -93,7 +93,7 @@ export default function App() {
     );
   }
 
-  // === 3️⃣ Booted Desktop ===
+  // === 3️⃣ Booted Desktop with subscription prompt ===
   return (
     <>
       {!user && activeForm === "register" && (
@@ -118,6 +118,18 @@ export default function App() {
           {editorOpen && (
             <PublicEditor user={user} onClose={() => setEditorOpen(false)} />
           )}
+          
+          {/* ✅ Show the subscription component */}
+          <div
+            style={{
+              position: "fixed",
+              bottom: "20px",
+              right: "20px",
+              zIndex: 999,
+            }}
+          >
+            <UpdateSubscribe />
+          </div>
         </>
       )}
     </>
