@@ -1,13 +1,29 @@
-import { useState } from "react";
-import { supabase } from "../lib/supabaseClient"; // direct import
+import { useState, useEffect } from "react";
+import { initSupabase } from "../lib/supabaseClient"; // dynamic init
 
 export default function LoginForm({ onLogin }) {
+  const [supabase, setSupabase] = useState(null);
   const [identifier, setIdentifier] = useState(""); // email or username
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Initialize Supabase on mount
+  useEffect(() => {
+    const setup = async () => {
+      const client = await initSupabase();
+      if (client) setSupabase(client);
+      else setMessage("❌ Failed to initialize database.");
+    };
+    setup();
+  }, []);
+
   const handleLogin = async () => {
+    if (!supabase) {
+      setMessage("Supabase not initialized yet.");
+      return;
+    }
+
     if (!identifier || !password) {
       setMessage("⚠️ Please enter both username/email and password.");
       return;
@@ -18,7 +34,7 @@ export default function LoginForm({ onLogin }) {
 
     try {
       // Try to find user by email or username
-      let { data: users, error } = await supabase
+      const { data: users, error } = await supabase
         .from("users")
         .select("*")
         .or(`email.eq.${identifier},username.eq.${identifier}`)
@@ -74,7 +90,13 @@ export default function LoginForm({ onLogin }) {
       </button>
 
       {message && (
-        <p style={{ marginTop: "15px", fontSize: "14px", color: message.startsWith("✅") ? "#0f0" : "#ff5555" }}>
+        <p
+          style={{
+            marginTop: "15px",
+            fontSize: "14px",
+            color: message.startsWith("✅") ? "#0f0" : "#ff5555",
+          }}
+        >
           {message}
         </p>
       )}
