@@ -30,7 +30,13 @@
     "nodemailer": "^6.9.4",
     "pg": "^8.16.3",
     "@supabase/supabase-js": "^2.33.0",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    
+    // ✅ New dependencies for IDE
+    "@monaco-editor/react": "^4.4.6",
+    "esbuild-wasm": "^0.19.2",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1"
   },
   "scripts": {
     "start": "vite",
