@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { initSupabase } from "../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient"; // direct import
 
 export default function LoginForm({ onLogin }) {
   const [identifier, setIdentifier] = useState(""); // email or username
@@ -17,25 +17,29 @@ export default function LoginForm({ onLogin }) {
     setMessage("");
 
     try {
-      const supabase = initSupabase();
-      if (!supabase) throw new Error("Supabase client not initialized");
+      // Try to find user by email or username
+      let { data: users, error } = await supabase
+        .from("users")
+        .select("*")
+        .or(`email.eq.${identifier},username.eq.${identifier}`)
+        .limit(1);
 
-      // Call a serverless function that handles password verification
-      const res = await fetch("/.netlify/functions/loginUser", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
-      });
+      if (error) throw error;
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        setMessage(`❌ ${data.error || "Login failed"}`);
+      const user = users[0];
+      if (!user) {
+        setMessage("❌ No user found with that email or username.");
         return;
       }
 
-      setMessage(`✅ Welcome back, ${data.username}!`);
-      onLogin(data);
+      // Plain text password check
+      if (password !== user.password) {
+        setMessage("❌ Invalid password.");
+        return;
+      }
+
+      setMessage(`✅ Welcome back, ${user.username}!`);
+      onLogin(user);
     } catch (err) {
       console.error(err);
       setMessage("❌ Error during login.");
@@ -45,7 +49,7 @@ export default function LoginForm({ onLogin }) {
   };
 
   return (
-    <div style={containerStyle}>
+    <div className="login-form" style={containerStyle}>
       <h2 style={{ marginBottom: "20px" }}>Login to WebBro OS</h2>
 
       <input
@@ -69,7 +73,11 @@ export default function LoginForm({ onLogin }) {
         {loading ? "Logging in..." : "Login"}
       </button>
 
-      {message && <p style={messageStyle(message)}>{message}</p>}
+      {message && (
+        <p style={{ marginTop: "15px", fontSize: "14px", color: message.startsWith("✅") ? "#0f0" : "#ff5555" }}>
+          {message}
+        </p>
+      )}
     </div>
   );
 }
@@ -77,7 +85,7 @@ export default function LoginForm({ onLogin }) {
 const containerStyle = {
   textAlign: "center",
   marginTop: "60px",
-  background: "rgba(0,0,0,0.7)",
+  background: "rgba(0, 0, 0, 0.7)",
   color: "#fff",
   padding: "30px",
   borderRadius: "10px",
@@ -108,9 +116,3 @@ const buttonStyle = {
   cursor: "pointer",
   fontWeight: "bold",
 };
-
-const messageStyle = (msg) => ({
-  marginTop: "15px",
-  fontSize: "14px",
-  color: msg.startsWith("✅") ? "#0f0" : "#ff5555",
-});
