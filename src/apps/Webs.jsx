@@ -1,4 +1,4 @@
-// src/apps/WebsApp.jsx
+// src/apps/Webs.jsx
 import React from "react";
 import CodeEditorIDE from "../components/CodeEditorIDE";
 
