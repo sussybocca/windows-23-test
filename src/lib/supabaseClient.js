@@ -32,8 +32,11 @@ export const initSupabase = async () => {
   }
 };
 
-// Optional: export a direct supabase getter (so imports won't fail)
+// Export a getter
 export const getSupabase = () => {
   if (!supabase) throw new Error("Supabase client not initialized. Call initSupabase first.");
   return supabase;
 };
+
+// ✅ Direct export so your imports in components won’t fail
+export { supabase };
