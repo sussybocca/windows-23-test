@@ -5,14 +5,15 @@ import Settings from "../apps/Settings";
 import FileSystemExplorer from "../apps/Explorer";
 import PublicExplorer from "../components/Explorer";
 import PublicEditor from "../components/PublicEditor";
+import WebsIDE from "../apps/Webs"; // ✅ New IDE app
 import Search from "./Search";
 import AppWindow from "./AppWindow";
 import localforage from "localforage";
 
-// ✅ Correct path for click sound
+// Correct path for click sound
 import clickSoundFile from "../assets/sounds/click.wav";
 
-// Built-in apps with custom emoji icons
+// Built-in apps with icons
 const builtInApps = [
   { name: "Calculator", icon: "🧮", component: <Calculator /> },
   { name: "Notes", icon: "📝", component: <Notes /> },
@@ -20,6 +21,7 @@ const builtInApps = [
   { name: "Filesystem Explorer", icon: "🗄️", component: <FileSystemExplorer /> },
   { name: "Public Explorer", icon: "🗂️", component: <PublicExplorer /> },
   { name: "Public Editor", icon: "🖌️", component: <PublicEditor /> },
+  { name: "Webs IDE", icon: "💻", component: <WebsIDE /> }, // ✅ Added
 ];
 
 export default function Desktop({ wallpaper }) {
@@ -27,21 +29,17 @@ export default function Desktop({ wallpaper }) {
   const [customApps, setCustomApps] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // Preload click sound with useRef
   const clickSound = useRef(new Audio(clickSoundFile));
 
-  // Load custom apps from localforage on mount
   useEffect(() => {
     localforage.getItem("customApps").then((apps) => {
       if (apps) setCustomApps(apps);
     });
   }, []);
 
-  // Combine built-in and custom apps
   const appsList = [...builtInApps, ...customApps];
 
   const openApp = (app) => {
-    // Play click sound
     clickSound.current.currentTime = 0;
     clickSound.current.play().catch(() => {});
 
@@ -67,22 +65,33 @@ export default function Desktop({ wallpaper }) {
       }}
     >
       {/* App Icons */}
-      {appsList.map((app) => (
-        <div
-          key={app.name}
-          className="app-icon"
-          onClick={() => openApp(app)}
-          style={{
-            cursor: "pointer",
-            display: "inline-block",
-            margin: 20,
-            textAlign: "center",
-          }}
-        >
-          <span style={{ fontSize: "32px" }}>{app.icon}</span>
-          <div style={{ fontSize: "14px", marginTop: 5 }}>{app.name}</div>
-        </div>
-      ))}
+      <div
+        className="desktop-icons-container"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "1rem",
+          padding: "1rem",
+        }}
+      >
+        {appsList.map((app) => (
+          <div
+            key={app.name}
+            className="desktop-icon"
+            onClick={() => openApp(app)}
+            style={{
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+            }}
+          >
+            <span style={{ fontSize: "6vw", maxFontSize: "32px" }}>{app.icon}</span>
+            <div style={{ fontSize: "3vw", maxFontSize: "14px" }}>{app.name}</div>
+          </div>
+        ))}
+      </div>
 
       {/* Open Apps */}
       {openApps.map((app, index) => (
@@ -91,6 +100,10 @@ export default function Desktop({ wallpaper }) {
           title={app.name}
           zIndex={index + 1}
           onClose={() => closeApp(app.name)}
+          maxWidth="95vw"
+          maxHeight="90vh"
+          minWidth="300px"
+          minHeight="200px"
         >
           {app.component}
         </AppWindow>
@@ -102,6 +115,8 @@ export default function Desktop({ wallpaper }) {
           title="Search"
           zIndex={openApps.length + 1}
           onClose={() => setSearchOpen(false)}
+          maxWidth="90vw"
+          maxHeight="80vh"
         >
           <Search />
         </AppWindow>
