@@ -9,14 +9,21 @@ import Explorer from "./components/Explorer";
 import PublicEditor from "./components/PublicEditor";
 import "./index.css";
 
+// Import wallpaper images
+import wallpaper1 from "./images/wallpaper1.jpg";
+import wallpaper2 from "./images/wallpaper2.jpg";
+import wallpaper3 from "./images/wallpaper3.jpg";
+
 export default function App() {
   const [bootFinished, setBootFinished] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
-
   const [activeForm, setActiveForm] = useState(null); // "register" | "login" | null
+  const [selectedWallpaper, setSelectedWallpaper] = useState(wallpaper1); // default wallpaper
+
+  const wallpapers = [wallpaper1, wallpaper2, wallpaper3];
 
   const handleLoginOrRegister = (loggedUser) => {
     setUser(loggedUser);
@@ -29,13 +36,50 @@ export default function App() {
       <div className="auth-selection" style={{ textAlign: "center", marginTop: "50px" }}>
         <h2>Welcome to WebBro OS</h2>
         <div style={{ marginTop: "20px" }}>
-          <button onClick={() => setActiveForm("register")} style={{ marginRight: "20px", padding: "10px 20px", fontSize: "16px" }}>
+          <button
+            onClick={() => setActiveForm("register")}
+            style={{ marginRight: "20px", padding: "10px 20px", fontSize: "16px" }}
+          >
             Register
           </button>
-          <button onClick={() => setActiveForm("login")} style={{ padding: "10px 20px", fontSize: "16px" }}>
+          <button
+            onClick={() => setActiveForm("login")}
+            style={{ padding: "10px 20px", fontSize: "16px" }}
+          >
             Login
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // Wallpaper selection menu after login
+  if (user && !bootFinished) {
+    return (
+      <div className="wallpaper-selection" style={{ textAlign: "center", marginTop: "50px" }}>
+        <h2>Select Your Wallpaper</h2>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "20px", gap: "20px" }}>
+          {wallpapers.map((wp, index) => (
+            <img
+              key={index}
+              src={wp}
+              alt={`wallpaper-${index + 1}`}
+              style={{
+                width: "150px",
+                height: "100px",
+                cursor: "pointer",
+                border: selectedWallpaper === wp ? "3px solid #00f" : "2px solid #ccc",
+              }}
+              onClick={() => setSelectedWallpaper(wp)}
+            />
+          ))}
+        </div>
+        <button
+          onClick={() => setBootFinished(true)}
+          style={{ marginTop: "20px", padding: "10px 20px", fontSize: "16px" }}
+        >
+          Confirm
+        </button>
       </div>
     );
   }
@@ -51,14 +95,10 @@ export default function App() {
       )}
 
       {/* Boot screen */}
-      {user && !bootFinished && (
-        <BootScreen onFinish={() => setBootFinished(true)} />
-      )}
-
-      {/* Main desktop */}
       {user && bootFinished && (
         <>
           <Desktop
+            wallpaper={selectedWallpaper}
             onOpenExplorer={() => setExplorerOpen(true)}
             onOpenEditor={() => setEditorOpen(true)}
           />
