@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { supabase } from "../lib/supabaseClient"; // direct import
+import { initSupabase } from "../lib/supabaseClient"; // use the async init
 
 export default function RegisterForm({ onRegister }) {
   const [email, setEmail] = useState("");
@@ -28,17 +28,6 @@ export default function RegisterForm({ onRegister }) {
       const codeValue = generateCode();
       setGeneratedCode(codeValue);
 
-      const { error } = await supabase.from("users").insert([
-        {
-          email,
-          username,
-          password, // plain text
-          two_step_enabled: twoStepEnabled,
-        },
-      ]);
-
-      if (error) throw error;
-
       if (twoStepEnabled) {
         const res = await fetch("/.netlify/functions/sendVerification", {
           method: "POST",
@@ -54,7 +43,7 @@ export default function RegisterForm({ onRegister }) {
       }
 
       setStep(2);
-      setMessage(`✅ Verification code generated! Enter it below: ${codeValue}`);
+      setMessage(`✅ Verification code generated! Enter it below.`);
     } catch (err) {
       console.error(err);
       setMessage("❌ Registration failed.");
@@ -74,8 +63,33 @@ export default function RegisterForm({ onRegister }) {
 
     try {
       if (code.toUpperCase() === generatedCode) {
-        onRegister({ email, username });
-        setMessage("✅ Verified! Registration complete.");
+        // Initialize Supabase client
+        const supabase = await initSupabase();
+        if (!supabase) {
+          setMessage("❌ Supabase not initialized.");
+          setLoading(false);
+          return;
+        }
+
+        // Insert verified user into Supabase
+        const { error } = await supabase.from("users").insert([
+          {
+            email,
+            username,
+            password, // plain text for now (consider hashing later)
+            two_step_enabled: twoStepEnabled,
+          },
+        ]);
+
+        if (error) {
+          console.error(error);
+          setMessage("❌ Failed to save user in Supabase.");
+          setLoading(false);
+          return;
+        }
+
+        onRegister({ email, username, twoStepEnabled });
+        setMessage("✅ Verified and saved! Registration complete.");
       } else {
         setMessage("❌ Verification failed. Check your code.");
       }
@@ -91,15 +105,42 @@ export default function RegisterForm({ onRegister }) {
     <div className="register-form" style={containerStyle}>
       {step === 1 && (
         <div>
-          <h2 style={{ marginBottom: "20px" }}>Register for WebBro OS</h2>
+          <h2>Register for WebBro OS</h2>
 
-          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} style={inputStyle} />
-          <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} disabled={loading} style={inputStyle} />
-          <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} style={inputStyle} />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            style={inputStyle}
+          />
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            disabled={loading}
+            style={inputStyle}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            style={inputStyle}
+          />
 
           <div style={{ marginTop: 10, fontSize: "14px" }}>
             <label>
-              <input type="checkbox" checked={twoStepEnabled} onChange={() => setTwoStepEnabled(s => !s)} disabled={loading} /> Enable 2-Step Email Verification
+              <input
+                type="checkbox"
+                checked={twoStepEnabled}
+                onChange={() => setTwoStepEnabled((s) => !s)}
+                disabled={loading}
+              />{" "}
+              Enable 2-Step Email Verification
             </label>
           </div>
 
@@ -112,14 +153,42 @@ export default function RegisterForm({ onRegister }) {
       {step === 2 && (
         <div>
           <h2>Enter Verification Code</h2>
-          <input type="text" placeholder="Verification code" value={code} onChange={e => setCode(e.target.value)} disabled={loading} style={inputStyle} />
+          <input
+            type="text"
+            placeholder="Verification code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            disabled={loading}
+            style={inputStyle}
+          />
           <button onClick={handleVerify} disabled={loading} style={buttonStyle}>
             {loading ? "Verifying..." : "Verify & Complete Registration"}
+          </button>
+          <button
+            onClick={() => {
+              setStep(1);
+              setMessage("");
+              setCode("");
+            }}
+            disabled={loading}
+            style={{ ...buttonStyle, marginLeft: 10 }}
+          >
+            Back
           </button>
         </div>
       )}
 
-      {message && <p style={{ marginTop: "15px", fontSize: "14px", color: message.startsWith("✅") ? "#0f0" : "#ff5555" }}>{message}</p>}
+      {message && (
+        <p
+          style={{
+            marginTop: "15px",
+            fontSize: "14px",
+            color: message.startsWith("✅") ? "#0f0" : "#ff5555",
+          }}
+        >
+          {message}
+        </p>
+      )}
     </div>
   );
 }
