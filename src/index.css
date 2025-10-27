@@ -4,8 +4,8 @@
 
 /* ---------- Variables ---------- */
 :root {
-  --accent-color: #0078D7;       /* Windows 11 default blue */
-  --accent-hover: #1A86FF;       /* Slightly lighter hover */
+  --accent-color: #0078D7;
+  --accent-hover: #1A86FF;
   --window-bg: rgba(255,255,255,0.3);
   --window-border: rgba(0,0,0,0.1);
   --taskbar-bg: rgba(255,255,255,0.2);
@@ -20,7 +20,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #0A0A0A; /* fallback dark background */
+  background-color: #0A0A0A;
 }
 
 /* ---------- Desktop ---------- */
@@ -32,11 +32,13 @@ body {
   display: flex;
   flex-wrap: wrap;
   padding: 1rem;
+  box-sizing: border-box;
 }
 
 /* Desktop Icons */
 .desktop-icon {
-  width: 6rem;
+  width: 15vw;
+  max-width: 6rem;
   margin: 0.5rem;
   cursor: pointer;
   display: flex;
@@ -48,6 +50,15 @@ body {
 .desktop-icon:hover {
   transform: scale(1.1);
   text-shadow: 0 0 6px rgba(0,0,0,0.7);
+}
+.desktop-icon span {
+  font-size: 4vw;
+  max-font-size: 32px;
+}
+.desktop-icon div {
+  font-size: 1.2vw;
+  max-font-size: 14px;
+  text-align: center;
 }
 
 /* ---------- Windows ---------- */
@@ -62,9 +73,11 @@ body {
   flex-direction: column;
   position: absolute;
   transition: border-color 0.2s ease;
+  width: 90vw;
+  max-width: 900px;
+  height: 80vh;
+  max-height: 700px;
 }
-
-/* Focused window accent */
 .window.focused {
   border-color: var(--accent-hover);
 }
@@ -84,7 +97,7 @@ body {
 }
 .title-bar span {
   font-weight: 600;
-  color: black;
+  font-size: 1rem;
 }
 .title-bar button {
   background: transparent;
@@ -109,7 +122,7 @@ body {
 
 /* Scrollbar for window content */
 .window-content::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 .window-content::-webkit-scrollbar-thumb {
   background-color: rgba(0,0,0,0.3);
@@ -125,7 +138,8 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 3.5rem;
+  height: 10vw;
+  max-height: 3.5rem;
   background-color: var(--taskbar-bg);
   backdrop-filter: blur(12px);
   display: flex;
@@ -135,7 +149,6 @@ body {
   border-top-left-radius: 1rem;
   border-top-right-radius: 1rem;
   gap: 1rem;
-  z-index: 50;
 }
 
 /* Taskbar Buttons */
@@ -154,9 +167,10 @@ body {
 /* ---------- Start Menu ---------- */
 .start-menu {
   position: absolute;
-  bottom: 3.5rem;
+  bottom: 10vw;
   left: 1rem;
-  width: 16rem;
+  width: 80vw;
+  max-width: 16rem;
   background-color: var(--start-menu-bg);
   backdrop-filter: blur(12px);
   border-radius: 1rem;
@@ -189,4 +203,33 @@ body {
 .start-menu button:hover {
   background-color: var(--accent-hover);
   transform: scale(1.05);
+}
+
+/* ---------- Media Queries for Mobile ---------- */
+@media (max-width: 768px) {
+  .desktop {
+    padding: 0.5rem;
+  }
+  .desktop-icon {
+    width: 20vw;
+    max-width: 5rem;
+  }
+  .desktop-icon span {
+    font-size: 6vw;
+  }
+  .desktop-icon div {
+    font-size: 3.5vw;
+  }
+  .window {
+    width: 95vw;
+    height: 90vh;
+    max-width: none;
+    max-height: none;
+  }
+  .taskbar {
+    height: 12vw;
+  }
+  .start-menu {
+    width: 90vw;
+  }
 }
