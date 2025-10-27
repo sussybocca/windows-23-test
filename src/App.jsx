@@ -9,10 +9,10 @@ import Explorer from "./components/Explorer";
 import PublicEditor from "./components/PublicEditor";
 import "./index.css";
 
-// Import wallpaper images
-import wallpaper1 from "./images/wallpaper1.jpg";
-import wallpaper2 from "./images/wallpaper2.jpg";
-import wallpaper3 from "./images/wallpaper3.jpg";
+// ✅ Correct import paths (images are in src/assets/images)
+import wallpaper1 from "./assets/images/wallpaper1.jpg";
+import wallpaper2 from "./assets/images/wallpaper2.jpg";
+import wallpaper3 from "./assets/images/wallpaper3.jpg";
 
 export default function App() {
   const [bootFinished, setBootFinished] = useState(false);
@@ -21,7 +21,7 @@ export default function App() {
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [activeForm, setActiveForm] = useState(null); // "register" | "login" | null
-  const [selectedWallpaper, setSelectedWallpaper] = useState(wallpaper1); // default wallpaper
+  const [selectedWallpaper, setSelectedWallpaper] = useState(wallpaper1); // Default wallpaper
 
   const wallpapers = [wallpaper1, wallpaper2, wallpaper3];
 
@@ -30,7 +30,7 @@ export default function App() {
     setBootFinished(true);
   };
 
-  // Show selection buttons if user is not logged in and no form is active
+  // === 1️⃣ Login/Register choice screen ===
   if (!user && !activeForm) {
     return (
       <div className="auth-selection" style={{ textAlign: "center", marginTop: "50px" }}>
@@ -53,12 +53,19 @@ export default function App() {
     );
   }
 
-  // Wallpaper selection menu after login
+  // === 2️⃣ Wallpaper selection screen ===
   if (user && !bootFinished) {
     return (
       <div className="wallpaper-selection" style={{ textAlign: "center", marginTop: "50px" }}>
         <h2>Select Your Wallpaper</h2>
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "20px", gap: "20px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "20px",
+            gap: "20px",
+          }}
+        >
           {wallpapers.map((wp, index) => (
             <img
               key={index}
@@ -67,8 +74,10 @@ export default function App() {
               style={{
                 width: "150px",
                 height: "100px",
+                objectFit: "cover",
                 cursor: "pointer",
-                border: selectedWallpaper === wp ? "3px solid #00f" : "2px solid #ccc",
+                border: selectedWallpaper === wp ? "3px solid #0078D7" : "2px solid #ccc",
+                borderRadius: "6px",
               }}
               onClick={() => setSelectedWallpaper(wp)}
             />
@@ -84,9 +93,9 @@ export default function App() {
     );
   }
 
+  // === 3️⃣ Booted Desktop ===
   return (
     <>
-      {/* Show active form if user selected one */}
       {!user && activeForm === "register" && (
         <RegisterForm onRegister={handleLoginOrRegister} />
       )}
@@ -94,7 +103,6 @@ export default function App() {
         <LoginForm onLogin={handleLoginOrRegister} />
       )}
 
-      {/* Boot screen */}
       {user && bootFinished && (
         <>
           <Desktop
