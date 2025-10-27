@@ -6,8 +6,8 @@ import anime from "animejs";
 import localforage from "localforage";
 import "./BootScreen.css";
 
-// ✅ Import the startup sound
-import startupSoundFile from "../sounds/startup.wav";
+// ✅ Correct path for startup sound
+import startupSoundFile from "../assets/sounds/startup.wav";
 
 export default function BootScreen({ onFinish }) {
   const [stageIndex, setStageIndex] = useState(0);
@@ -16,7 +16,7 @@ export default function BootScreen({ onFinish }) {
   const bootRef = useRef(null);
   const progressRef = useRef(null);
 
-  // Preload startup sound
+  // Preload startup sound with useRef
   const startupSound = useRef(new Audio(startupSoundFile));
 
   const bootStages = [
@@ -51,16 +51,16 @@ export default function BootScreen({ onFinish }) {
     },
   ];
 
-  const totalDuration = bootStages.flatMap(s => s.duration).reduce((a, b) => a + b, 0);
+  const totalDuration = bootStages.flatMap((s) => s.duration).reduce((a, b) => a + b, 0);
 
   useEffect(() => {
-    localforage.getItem("bootFinished").then(finished => {
+    localforage.getItem("bootFinished").then((finished) => {
       if (finished) return onFinish?.();
 
       // ✅ Play startup sound at beginning
       startupSound.current.currentTime = 0;
       startupSound.current.volume = 0.7;
-      startupSound.current.play().catch(err => {
+      startupSound.current.play().catch((err) => {
         console.warn("Startup sound could not autoplay:", err);
       });
 
@@ -83,7 +83,7 @@ export default function BootScreen({ onFinish }) {
               duration: stage.duration[j],
             });
 
-            await new Promise(resolve => {
+            await new Promise((resolve) => {
               new TypeIt(`#stage-${i}-${j}`, {
                 strings: stage.text[j],
                 speed: 40,
@@ -104,7 +104,7 @@ export default function BootScreen({ onFinish }) {
 
           if (stage.prompt) {
             setShowPrompt(true);
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise((resolve) => setTimeout(resolve, 2000));
             setShowPrompt(false);
           }
         }
