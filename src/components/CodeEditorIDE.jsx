@@ -1,4 +1,4 @@
-// CodeEditorIDE.jsx
+// src/components/CodeEditorIDE.jsx
 import { useState, useEffect } from "react";
 import { initSupabase } from "../lib/supabaseClient";
 import * as esbuild from "esbuild-wasm";
@@ -57,9 +57,14 @@ export default function CodeEditorIDE({ user }) {
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [esbuildReady, setEsbuildReady] = useState(false);
 
   useEffect(() => {
-    esbuild.initialize({ wasmURL: "/esbuild.wasm" }).catch(console.error);
+    const initializeEsbuild = async () => {
+      await esbuild.initialize({ wasmURL: "/esbuild.wasm" });
+      setEsbuildReady(true);
+    };
+    initializeEsbuild().catch(console.error);
   }, []);
 
   const getFileContent = (path) => {
@@ -120,6 +125,11 @@ export default function CodeEditorIDE({ user }) {
   };
 
   const runProject = async () => {
+    if (!esbuildReady) {
+      alert("Editor is still initializing, please wait...");
+      return;
+    }
+
     setLoading(true);
     setErrors([]);
     try {
@@ -190,7 +200,9 @@ export default function CodeEditorIDE({ user }) {
             </div>
           ))}
           <button onClick={saveProject} style={{ marginTop: "10px" }}>💾 Save Project</button>
-          <button onClick={runProject} style={{ marginTop: "10px" }} disabled={loading}>{loading ? "Building..." : "▶ Run"}</button>
+          <button onClick={runProject} style={{ marginTop: "10px" }} disabled={loading || !esbuildReady}>
+            {loading ? "Building..." : !esbuildReady ? "Initializing..." : "▶ Run"}
+          </button>
           {errors.length > 0 && <div style={{ color: "red", marginTop: "10px" }}>{errors.map((e, i) => <div key={i}>{e}</div>)}</div>}
         </div>
 
