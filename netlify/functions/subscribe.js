@@ -1,6 +1,5 @@
-// netlify/functions/subscribe.js
 import nodemailer from "nodemailer";
-import { Pool } from "@neondatabase/serverless";
+import { initSupabase } from "../../lib/supabaseClient"; // async init
 
 export const handler = async (event) => {
   try {
@@ -13,21 +12,27 @@ export const handler = async (event) => {
       };
     }
 
-    // Connect to Neon database
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    // Initialize Supabase client
+    const supabase = await initSupabase();
+    if (!supabase) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ success: false, error: "Supabase not initialized" }),
+      };
+    }
 
-    // Store email in the subscribers table (create it in Neon first)
-    await pool.query(
-      `INSERT INTO subscribers (email)
-       VALUES ($1)
-       ON CONFLICT (email) DO NOTHING`,
-      [email]
-    );
+    // Insert email into subscribers table (ignore if already exists)
+    const { error } = await supabase.from("subscribers").insert([{ email }]);
 
-    // Close the pool after query
-    await pool.end();
+    if (error && !error.message.includes("duplicate key")) {
+      console.error("Supabase insert error:", error);
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ success: false, error: error.message }),
+      };
+    }
 
-    // Send a confirmation email
+    // Send confirmation email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
