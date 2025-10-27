@@ -1,11 +1,16 @@
 import { useState } from "react";
-import localforage from "localforage";
+import { initSupabase } from "../lib/supabaseClient";
+
+// We use bcryptjs dynamically to avoid Vite bundling issues
+let bcrypt;
+if (typeof window !== "undefined") {
+  bcrypt = require("bcryptjs");
+}
 
 export default function RegisterForm({ onRegister }) {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [step, setStep] = useState(1);
@@ -13,18 +18,12 @@ export default function RegisterForm({ onRegister }) {
   const [loading, setLoading] = useState(false);
   const [twoStepEnabled, setTwoStepEnabled] = useState(false);
 
-  // Generate a 10-character verification code
   const generateCode = () =>
     crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
 
   const handleRegister = async () => {
-    if (!email || !username || !password || !confirm) {
+    if (!email || !username || !password) {
       setMessage("⚠️ Please fill in all fields.");
-      return;
-    }
-
-    if (password !== confirm) {
-      setMessage("❌ Passwords do not match.");
       return;
     }
 
@@ -32,22 +31,30 @@ export default function RegisterForm({ onRegister }) {
     setMessage("");
 
     try {
-      const users = (await localforage.getItem("users")) || [];
+      const supabase = await initSupabase();
+      if (!supabase) throw new Error("Supabase client not initialized");
 
-      const userExists = users.some(
-        (u) => u.email === email || u.username === username
-      );
-      if (userExists) {
-        setMessage("⚠️ That username or email is already registered.");
-        setLoading(false);
-        return;
-      }
+      // Hash password dynamically
+      const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Generate verification code
       const codeValue = generateCode();
       setGeneratedCode(codeValue);
 
+      // Insert user in Supabase
+      const { error } = await supabase.from("users").insert([
+        {
+          email,
+          username,
+          password_hash: hashedPassword,
+          two_step_enabled: twoStepEnabled,
+        },
+      ]);
+
+      if (error) throw error;
+
+      // Optional 2-step email verification
       if (twoStepEnabled) {
-        // Optional 2-Step: Email verification (Netlify function)
         const res = await fetch("/.netlify/functions/sendVerification", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -62,10 +69,10 @@ export default function RegisterForm({ onRegister }) {
       }
 
       setStep(2);
-      setMessage("✅ Verification code generated! Enter it below.");
+      setMessage(`✅ Verification code generated! Enter it below: ${codeValue}`);
     } catch (err) {
       console.error(err);
-      setMessage("❌ Error during registration.");
+      setMessage(`❌ Registration failed: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -82,20 +89,10 @@ export default function RegisterForm({ onRegister }) {
 
     try {
       if (code.toUpperCase() === generatedCode) {
-        const newUser = {
-          email,
-          username,
-          password, // 🔒 You can hash later if needed
-          twoStepEnabled,
-        };
-
-        const users = (await localforage.getItem("users")) || [];
-        await localforage.setItem("users", [...users, newUser]);
-
-        setMessage("✅ Verified & Registered! Welcome aboard 🚀");
-        onRegister(newUser);
+        onRegister({ email, username });
+        setMessage("✅ Verified! Registration complete.");
       } else {
-        setMessage("❌ Incorrect verification code.");
+        setMessage("❌ Verification failed. Check your code.");
       }
     } catch (err) {
       console.error(err);
@@ -106,25 +103,10 @@ export default function RegisterForm({ onRegister }) {
   };
 
   return (
-    <div
-      className="register-form"
-      style={{
-        textAlign: "center",
-        marginTop: "60px",
-        background: "rgba(0, 0, 0, 0.7)",
-        color: "#fff",
-        padding: "30px",
-        borderRadius: "10px",
-        width: "350px",
-        marginLeft: "auto",
-        marginRight: "auto",
-        boxShadow: "0 0 20px rgba(0, 255, 255, 0.2)",
-      }}
-    >
+    <div style={containerStyle}>
       {step === 1 && (
         <div>
           <h2 style={{ marginBottom: "20px" }}>Register for WebBro OS</h2>
-
           <input
             type="email"
             placeholder="Email"
@@ -149,14 +131,6 @@ export default function RegisterForm({ onRegister }) {
             disabled={loading}
             style={inputStyle}
           />
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            disabled={loading}
-            style={inputStyle}
-          />
 
           <div style={{ marginTop: 10, fontSize: "14px" }}>
             <label>
@@ -170,12 +144,8 @@ export default function RegisterForm({ onRegister }) {
             </label>
           </div>
 
-          <button
-            onClick={handleRegister}
-            disabled={loading}
-            style={buttonStyle}
-          >
-            {loading ? "Generating..." : "Generate Verification Code"}
+          <button onClick={handleRegister} disabled={loading} style={buttonStyle}>
+            {loading ? "Registering..." : "Register & Generate Verification"}
           </button>
         </div>
       )}
@@ -183,50 +153,22 @@ export default function RegisterForm({ onRegister }) {
       {step === 2 && (
         <div>
           <h2>Enter Verification Code</h2>
-          <p style={{ fontSize: "14px" }}>
-            Check your email (if enabled) or enter the code displayed.
-          </p>
-
           <input
             type="text"
-            placeholder="Verification Code"
+            placeholder="Verification code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             disabled={loading}
             style={inputStyle}
           />
-
-          <div style={{ marginTop: "15px" }}>
-            <button
-              onClick={handleVerify}
-              disabled={loading}
-              style={buttonStyle}
-            >
-              {loading ? "Verifying..." : "Verify & Register"}
-            </button>
-            <button
-              onClick={() => {
-                setStep(1);
-                setMessage("");
-                setCode("");
-              }}
-              disabled={loading}
-              style={{ ...buttonStyle, background: "#444", marginLeft: "10px" }}
-            >
-              Back
-            </button>
-          </div>
+          <button onClick={handleVerify} disabled={loading} style={buttonStyle}>
+            {loading ? "Verifying..." : "Verify & Complete Registration"}
+          </button>
         </div>
       )}
 
       {message && (
-        <p
-          style={{
-            marginTop: "15px",
-            fontSize: "14px",
-            color: message.startsWith("✅") ? "#0f0" : "#ff5555",
-          }}
-        >
+        <p style={{ marginTop: "15px", fontSize: "14px", color: message.startsWith("✅") ? "#0f0" : "#ff5555" }}>
           {message}
         </p>
       )}
@@ -234,7 +176,19 @@ export default function RegisterForm({ onRegister }) {
   );
 }
 
-// Reusable inline styles
+const containerStyle = {
+  textAlign: "center",
+  marginTop: "60px",
+  background: "rgba(0, 0, 0, 0.7)",
+  color: "#fff",
+  padding: "30px",
+  borderRadius: "10px",
+  width: "350px",
+  marginLeft: "auto",
+  marginRight: "auto",
+  boxShadow: "0 0 20px rgba(0, 255, 255, 0.2)",
+};
+
 const inputStyle = {
   display: "block",
   width: "100%",
