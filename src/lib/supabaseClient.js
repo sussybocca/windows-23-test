@@ -32,11 +32,17 @@ export const initSupabase = async () => {
   }
 };
 
-// Export a getter
+/**
+ * Getter for the Supabase client.
+ * Throws an error if initSupabase hasn’t been called yet.
+ */
 export const getSupabase = () => {
   if (!supabase) throw new Error("Supabase client not initialized. Call initSupabase first.");
   return supabase;
 };
 
-// ✅ Direct export so your imports in components won’t fail
-export { supabase };
+/**
+ * Optional: default export for compatibility in components that import directly.
+ * ⚠️ Only safe to use after initSupabase() has completed.
+ */
+export default supabase;
