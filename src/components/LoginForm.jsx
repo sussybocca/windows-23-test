@@ -1,28 +1,12 @@
-import { useState, useEffect } from "react";
-import localforage from "localforage";
+import { useState } from "react";
+import { initSupabase } from "../lib/supabaseClient";
+import bcrypt from "bcryptjs"; // For comparing hashed passwords
 
 export default function LoginForm({ onLogin }) {
   const [identifier, setIdentifier] = useState(""); // email or username
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [env, setEnv] = useState({});
-
-  // Load optional Netlify env vars
-  useEffect(() => {
-    const loadEnv = async () => {
-      try {
-        const res = await fetch("/.netlify/functions/env");
-        const data = await res.json();
-        if (data.success) {
-          setEnv(data.env);
-        }
-      } catch (err) {
-        console.warn("⚠️ Could not load environment variables.");
-      }
-    };
-    loadEnv();
-  }, []);
 
   const handleLogin = async () => {
     if (!identifier || !password) {
@@ -34,21 +18,33 @@ export default function LoginForm({ onLogin }) {
     setMessage("");
 
     try {
-      const users = (await localforage.getItem("users")) || [];
+      const supabase = initSupabase();
+      if (!supabase) throw new Error("Supabase client not initialized");
 
-      const user = users.find(
-        (u) =>
-          (u.email.toLowerCase() === identifier.toLowerCase() ||
-            u.username.toLowerCase() === identifier.toLowerCase()) &&
-          u.password === password
-      );
+      // Try to find user by email or username
+      let { data: users, error } = await supabase
+        .from("users")
+        .select("*")
+        .or(`email.eq.${identifier},username.eq.${identifier}`)
+        .limit(1);
 
-      if (user) {
-        setMessage(`✅ Welcome back, ${user.username}!`);
-        onLogin(user);
-      } else {
-        setMessage("❌ Invalid credentials. Try again.");
+      if (error) throw error;
+
+      const user = users[0];
+      if (!user) {
+        setMessage("❌ No user found with that email or username.");
+        return;
       }
+
+      // Compare password hash
+      const validPassword = await bcrypt.compare(password, user.password_hash);
+      if (!validPassword) {
+        setMessage("❌ Invalid password.");
+        return;
+      }
+
+      setMessage(`✅ Welcome back, ${user.username}!`);
+      onLogin(user);
     } catch (err) {
       console.error(err);
       setMessage("❌ Error during login.");
@@ -92,11 +88,7 @@ export default function LoginForm({ onLogin }) {
         style={inputStyle}
       />
 
-      <button
-        onClick={handleLogin}
-        disabled={loading}
-        style={buttonStyle}
-      >
+      <button onClick={handleLogin} disabled={loading} style={buttonStyle}>
         {loading ? "Logging in..." : "Login"}
       </button>
 
@@ -115,7 +107,6 @@ export default function LoginForm({ onLogin }) {
   );
 }
 
-// Shared styles
 const inputStyle = {
   display: "block",
   width: "100%",
