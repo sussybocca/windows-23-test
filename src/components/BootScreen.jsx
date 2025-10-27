@@ -6,12 +6,18 @@ import anime from "animejs";
 import localforage from "localforage";
 import "./BootScreen.css";
 
+// ✅ Import the startup sound
+import startupSoundFile from "../sounds/startup.wav";
+
 export default function BootScreen({ onFinish }) {
   const [stageIndex, setStageIndex] = useState(0);
   const [subStage, setSubStage] = useState(0);
   const [showPrompt, setShowPrompt] = useState(false);
   const bootRef = useRef(null);
   const progressRef = useRef(null);
+
+  // Preload startup sound
+  const startupSound = useRef(new Audio(startupSoundFile));
 
   const bootStages = [
     {
@@ -27,7 +33,7 @@ export default function BootScreen({ onFinish }) {
       name: "Bootloader",
       text: ["Press ENTER to boot Windows23 OS", "Press ESC for setup..."],
       duration: [3000, 3000],
-      prompt: true, // This stage will show a selectable prompt
+      prompt: true,
     },
     {
       name: "Kernel",
@@ -51,6 +57,13 @@ export default function BootScreen({ onFinish }) {
     localforage.getItem("bootFinished").then(finished => {
       if (finished) return onFinish?.();
 
+      // ✅ Play startup sound at beginning
+      startupSound.current.currentTime = 0;
+      startupSound.current.volume = 0.7;
+      startupSound.current.play().catch(err => {
+        console.warn("Startup sound could not autoplay:", err);
+      });
+
       let elapsed = 0;
 
       const runStage = async () => {
@@ -60,9 +73,9 @@ export default function BootScreen({ onFinish }) {
 
           for (let j = 0; j < stage.text.length; j++) {
             setSubStage(j);
-            // Animate progress bar
             const stageStart = elapsed;
             const stageEnd = elapsed + stage.duration[j];
+
             anime({
               targets: progressRef.current,
               width: [`${(stageStart / totalDuration) * 100}%`, `${(stageEnd / totalDuration) * 100}%`],
@@ -70,7 +83,6 @@ export default function BootScreen({ onFinish }) {
               duration: stage.duration[j],
             });
 
-            // Typewriter effect
             await new Promise(resolve => {
               new TypeIt(`#stage-${i}-${j}`, {
                 strings: stage.text[j],
@@ -90,10 +102,9 @@ export default function BootScreen({ onFinish }) {
             elapsed += stage.duration[j];
           }
 
-          // Show prompt if stage requires it
           if (stage.prompt) {
             setShowPrompt(true);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // wait for user selection
+            await new Promise(resolve => setTimeout(resolve, 2000));
             setShowPrompt(false);
           }
         }
@@ -127,7 +138,7 @@ export default function BootScreen({ onFinish }) {
         {/* Boot Text */}
         <div className="flex flex-col items-start w-96">
           {bootStages.map((stage, i) =>
-            stage.text.map((text, j) => (
+            stage.text.map((_, j) => (
               <div
                 key={`${i}-${j}`}
                 id={`stage-${i}-${j}`}
