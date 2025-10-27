@@ -1,11 +1,5 @@
 import { useState } from "react";
-import { initSupabase } from "../lib/supabaseClient";
-
-// We use bcryptjs dynamically to avoid Vite bundling issues
-let bcrypt;
-if (typeof window !== "undefined") {
-  bcrypt = require("bcryptjs");
-}
+import { supabase } from "../lib/supabaseClient"; // direct import
 
 export default function RegisterForm({ onRegister }) {
   const [email, setEmail] = useState("");
@@ -31,29 +25,20 @@ export default function RegisterForm({ onRegister }) {
     setMessage("");
 
     try {
-      const supabase = await initSupabase();
-      if (!supabase) throw new Error("Supabase client not initialized");
-
-      // Hash password dynamically
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Generate verification code
       const codeValue = generateCode();
       setGeneratedCode(codeValue);
 
-      // Insert user in Supabase
       const { error } = await supabase.from("users").insert([
         {
           email,
           username,
-          password_hash: hashedPassword,
+          password, // plain text
           two_step_enabled: twoStepEnabled,
         },
       ]);
 
       if (error) throw error;
 
-      // Optional 2-step email verification
       if (twoStepEnabled) {
         const res = await fetch("/.netlify/functions/sendVerification", {
           method: "POST",
@@ -72,7 +57,7 @@ export default function RegisterForm({ onRegister }) {
       setMessage(`✅ Verification code generated! Enter it below: ${codeValue}`);
     } catch (err) {
       console.error(err);
-      setMessage(`❌ Registration failed: ${err.message}`);
+      setMessage("❌ Registration failed.");
     } finally {
       setLoading(false);
     }
@@ -103,44 +88,18 @@ export default function RegisterForm({ onRegister }) {
   };
 
   return (
-    <div style={containerStyle}>
+    <div className="register-form" style={containerStyle}>
       {step === 1 && (
         <div>
           <h2 style={{ marginBottom: "20px" }}>Register for WebBro OS</h2>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-            style={inputStyle}
-          />
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            disabled={loading}
-            style={inputStyle}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-            style={inputStyle}
-          />
+
+          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} style={inputStyle} />
+          <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} disabled={loading} style={inputStyle} />
+          <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} style={inputStyle} />
 
           <div style={{ marginTop: 10, fontSize: "14px" }}>
             <label>
-              <input
-                type="checkbox"
-                checked={twoStepEnabled}
-                onChange={() => setTwoStepEnabled((s) => !s)}
-                disabled={loading}
-              />{" "}
-              Enable 2-Step Email Verification
+              <input type="checkbox" checked={twoStepEnabled} onChange={() => setTwoStepEnabled(s => !s)} disabled={loading} /> Enable 2-Step Email Verification
             </label>
           </div>
 
@@ -153,25 +112,14 @@ export default function RegisterForm({ onRegister }) {
       {step === 2 && (
         <div>
           <h2>Enter Verification Code</h2>
-          <input
-            type="text"
-            placeholder="Verification code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            disabled={loading}
-            style={inputStyle}
-          />
+          <input type="text" placeholder="Verification code" value={code} onChange={e => setCode(e.target.value)} disabled={loading} style={inputStyle} />
           <button onClick={handleVerify} disabled={loading} style={buttonStyle}>
             {loading ? "Verifying..." : "Verify & Complete Registration"}
           </button>
         </div>
       )}
 
-      {message && (
-        <p style={{ marginTop: "15px", fontSize: "14px", color: message.startsWith("✅") ? "#0f0" : "#ff5555" }}>
-          {message}
-        </p>
-      )}
+      {message && <p style={{ marginTop: "15px", fontSize: "14px", color: message.startsWith("✅") ? "#0f0" : "#ff5555" }}>{message}</p>}
     </div>
   );
 }
