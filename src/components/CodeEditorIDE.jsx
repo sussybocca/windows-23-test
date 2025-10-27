@@ -3,6 +3,39 @@ import { useState, useEffect } from "react";
 import { initSupabase } from "../lib/supabaseClient";
 import * as esbuild from "esbuild-wasm";
 import MonacoEditor from "@monaco-editor/react";
+import { DndProvider, useDrag, useDrop } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+
+const FILE = "file";
+
+function DraggableFile({ path, fileName, moveFile, selectedFile, setSelectedFile, deleteFile }) {
+  const [, drag] = useDrag(() => ({
+    type: FILE,
+    item: { path },
+  }));
+
+  const [, drop] = useDrop({
+    accept: FILE,
+    drop: (item) => {
+      moveFile(item.path, path.split("/")[0]);
+    },
+  });
+
+  return (
+    <div
+      ref={(node) => drag(drop(node))}
+      style={{
+        cursor: "pointer",
+        fontWeight: selectedFile === path ? "bold" : "normal",
+      }}
+      onClick={() => setSelectedFile(path)}
+    >
+      {fileName}{" "}
+      <button onClick={() => deleteFile(path)} style={{ fontSize: "10px" }}>❌</button>
+      <button onClick={() => moveFile(path, path.startsWith("src") ? "public" : "src")} style={{ fontSize: "10px" }}>➡</button>
+    </div>
+  );
+}
 
 export default function CodeEditorIDE({ user }) {
   const [project, setProject] = useState({
@@ -23,12 +56,12 @@ export default function CodeEditorIDE({ user }) {
   const [outputCode, setOutputCode] = useState("");
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   useEffect(() => {
     esbuild.initialize({ wasmURL: "/esbuild.wasm" }).catch(console.error);
   }, []);
 
-  // Get file content
   const getFileContent = (path) => {
     const parts = path.split("/");
     let current = project.files;
@@ -36,7 +69,6 @@ export default function CodeEditorIDE({ user }) {
     return current;
   };
 
-  // Update file content
   const updateFileContent = (path, content) => {
     const parts = path.split("/");
     setProject((prev) => {
@@ -48,7 +80,6 @@ export default function CodeEditorIDE({ user }) {
     });
   };
 
-  // Create new file
   const createFile = (folder, name) => {
     setProject((prev) => {
       const newFiles = { ...prev.files };
@@ -58,7 +89,6 @@ export default function CodeEditorIDE({ user }) {
     });
   };
 
-  // Delete file
   const deleteFile = (path) => {
     const parts = path.split("/");
     setProject((prev) => {
@@ -71,7 +101,6 @@ export default function CodeEditorIDE({ user }) {
     if (selectedFile === path) setSelectedFile("");
   };
 
-  // Move file
   const moveFile = (fromPath, toFolder) => {
     const parts = fromPath.split("/");
     const fileName = parts.pop();
@@ -90,7 +119,6 @@ export default function CodeEditorIDE({ user }) {
     setSelectedFile(`${toFolder}/${fileName}`);
   };
 
-  // Build/Run project
   const runProject = async () => {
     setLoading(true);
     setErrors([]);
@@ -106,6 +134,8 @@ export default function CodeEditorIDE({ user }) {
 
       const result = await esbuild.transform(combinedCode, { loader: "jsx", target: "es2017" });
       setOutputCode(result.code);
+      const blob = new Blob([`<div id="root"></div><script>${result.code}</script>`], { type: "text/html" });
+      setPreviewUrl(URL.createObjectURL(blob));
     } catch (err) {
       setErrors([err.message]);
       console.error(err);
@@ -114,62 +144,75 @@ export default function CodeEditorIDE({ user }) {
     }
   };
 
-  // Save to Supabase
   const saveProject = async () => {
+    if (!project.license) {
+      alert("Please add a license before saving!");
+      return;
+    }
+
     const supabase = await initSupabase();
     const { error } = await supabase
       .from("user_projects")
       .upsert([{ owner_id: user.id, project_name: project.project_name, license: project.license, files: project.files }]);
+
     if (error) console.error(error);
     else alert("Project saved!");
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
-      {/* File Tree */}
-      <div style={{ width: "220px", borderRight: "1px solid #555", padding: "10px" }}>
-        {Object.keys(project.files).map((folder) => (
-          <div key={folder}>
-            <strong>{folder}</strong>
-            <div style={{ marginLeft: "10px" }}>
-              {Object.keys(project.files[folder]).map((file) => (
-                <div
-                  key={file}
-                  style={{ cursor: "pointer", fontWeight: selectedFile === `${folder}/${file}` ? "bold" : "normal" }}
-                  onClick={() => setSelectedFile(`${folder}/${file}`)}
-                >
-                  {file}{" "}
-                  <button onClick={() => deleteFile(`${folder}/${file}`)} style={{ fontSize: "10px" }}>❌</button>
-                  <button onClick={() => moveFile(`${folder}/${file}`, folder === "src" ? "public" : "src")} style={{ fontSize: "10px" }}>➡</button>
-                </div>
-              ))}
-              <button onClick={() => createFile(folder, "newFile.jsx")} style={{ fontSize: "10px", marginTop: "5px" }}>➕ Add File</button>
-            </div>
-          </div>
-        ))}
-        <button onClick={saveProject} style={{ marginTop: "10px" }}>💾 Save Project</button>
-        <button onClick={runProject} style={{ marginTop: "10px" }} disabled={loading}>{loading ? "Building..." : "▶ Run"}</button>
-        {errors.length > 0 && <div style={{ color: "red", marginTop: "10px" }}>{errors.map((e,i)=><div key={i}>{e}</div>)}</div>}
-      </div>
-
-      {/* Editor + Preview */}
-      <div style={{ flex: 1 }}>
-        {selectedFile && (
-          <MonacoEditor
-            height="50%"
-            language="javascript"
-            theme="vs-dark"
-            value={getFileContent(selectedFile)}
-            onChange={(value) => updateFileContent(selectedFile, value)}
+    <DndProvider backend={HTML5Backend}>
+      <div style={{ display: "flex", height: "100vh" }}>
+        {/* File Tree */}
+        <div style={{ width: "220px", borderRight: "1px solid #555", padding: "10px" }}>
+          <input
+            placeholder="License"
+            value={project.license}
+            onChange={(e) => setProject({ ...project, license: e.target.value })}
+            style={{ width: "100%", marginBottom: "10px" }}
           />
-        )}
-        <iframe
-          title="preview"
-          sandbox="allow-scripts"
-          srcDoc={`<html><body><div id="root"></div><script>${outputCode}</script></body></html>`}
-          style={{ width: "100%", height: "50%", border: "none" }}
-        />
+          {Object.keys(project.files).map((folder) => (
+            <div key={folder}>
+              <strong>{folder}</strong>
+              <div style={{ marginLeft: "10px" }}>
+                {Object.keys(project.files[folder]).map((file) => (
+                  <DraggableFile
+                    key={file}
+                    path={`${folder}/${file}`}
+                    fileName={file}
+                    moveFile={moveFile}
+                    selectedFile={selectedFile}
+                    setSelectedFile={setSelectedFile}
+                    deleteFile={deleteFile}
+                  />
+                ))}
+                <button onClick={() => createFile(folder, "newFile.jsx")} style={{ fontSize: "10px", marginTop: "5px" }}>➕ Add File</button>
+              </div>
+            </div>
+          ))}
+          <button onClick={saveProject} style={{ marginTop: "10px" }}>💾 Save Project</button>
+          <button onClick={runProject} style={{ marginTop: "10px" }} disabled={loading}>{loading ? "Building..." : "▶ Run"}</button>
+          {errors.length > 0 && <div style={{ color: "red", marginTop: "10px" }}>{errors.map((e, i) => <div key={i}>{e}</div>)}</div>}
+        </div>
+
+        {/* Editor + Preview */}
+        <div style={{ flex: 1 }}>
+          {selectedFile && (
+            <MonacoEditor
+              height="50%"
+              language="javascript"
+              theme="vs-dark"
+              value={getFileContent(selectedFile)}
+              onChange={(value) => updateFileContent(selectedFile, value)}
+            />
+          )}
+          <iframe
+            title="preview"
+            sandbox="allow-scripts"
+            src={previewUrl}
+            style={{ width: "100%", height: "50%", border: "none" }}
+          />
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 }
